@@ -1,0 +1,330 @@
+# AWS Resource Audit and Cleanup Guide
+
+## Overview
+This guide provides a comprehensive approach to audit AWS resources, identify unused/idle resources, and safely clean them up to optimize costs.
+
+## Prerequisites
+- AWS CLI configured with appropriate permissions
+- Python 3.x with boto3 library
+- Backup strategy in place
+- List of critical resources that should never be deleted
+
+## Phase 1: Resource Discovery and Inventory
+
+### 1.1 EC2 Resources Audit
+```bash
+# List all EC2 instances with their state and launch time
+aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,State.Name,LaunchTime,InstanceType,Tags[?Key==`Name`].Value|[0]]' --output table
+
+# Find stopped instances older than 7 days
+aws ec2 describe-instances --filters "Name=instance-state-name,Values=stopped" --query 'Reservations[*].Instances[?LaunchTime<=`'$(date -d '7 days ago' -Iseconds)'`].[InstanceId,LaunchTime,Tags[?Key==`Name`].Value|[0]]' --output table
+```
+<img width="1855" height="584" alt="image" src="https://github.com/user-attachments/assets/6dbfa25d-ed07-4091-81f5-f3f554fdc959" />
+
+<img width="1836" height="255" alt="image" src="https://github.com/user-attachments/assets/7654a533-1cf5-40b3-ba3e-ab1319ff5e71" />
+
+
+### 1.2 EBS Volumes Audit
+```bash
+# List unattached EBS volumes
+aws ec2 describe-volumes --filters "Name=status,Values=available" --query 'Volumes[*].[VolumeId,Size,VolumeType,CreateTime,Tags[?Key==`Name`].Value|[0]]' --output table
+
+# List volumes attached to stopped instances
+aws ec2 describe-volumes --query 'Volumes[?Attachments[0].State==`attached`]' --output table
+```
+<img width="1831" height="988" alt="image" src="https://github.com/user-attachments/assets/95386176-2d9a-46cc-a5b2-356e43f4ccda" />
+
+<img width="1776" height="907" alt="image" src="https://github.com/user-attachments/assets/83daac29-54df-484f-970e-c374b0f5ace1" />
+
+### 1.3 Snapshots Audit
+```bash
+# List snapshots older than 30 days (adjust date as needed)
+aws ec2 describe-snapshots --owner-ids self --query 'Snapshots[?StartTime<=`'$(date -d '30 days ago' -Iseconds)'`].[SnapshotId,VolumeId,StartTime,Description]' --output table
+```
+
+### 1.4 AMI Audit
+```bash
+# List AMIs owned by account
+aws ec2 describe-images --owners self --query 'Images[*].[ImageId,Name,CreationDate,State]' --output table
+
+# Check AMI usage (requires checking launch configurations, launch templates, etc.)
+aws ec2 describe-launch-templates --query 'LaunchTemplates[*].[LaunchTemplateId,LaunchTemplateName]' --output table
+```
+
+### 1.5 Elastic IP Audit
+```bash
+# List unassociated Elastic IPs
+aws ec2 describe-addresses --query 'Addresses[?AssociationId==null].[PublicIp,AllocationId,Domain]' --output table
+```
+
+### 1.6 Load Balancers Audit
+```bash
+# Classic Load Balancers
+aws elb describe-load-balancers --query 'LoadBalancerDescriptions[*].[LoadBalancerName,Instances[0].InstanceId,CreatedTime]' --output table
+
+# Application/Network Load Balancers
+aws elbv2 describe-load-balancers --query 'LoadBalancers[*].[LoadBalancerName,State.Code,CreatedTime]' --output table
+
+# Check target health
+aws elbv2 describe-target-groups --query 'TargetGroups[*].[TargetGroupName,TargetType]' --output table
+```
+
+### 1.7 S3 Buckets Audit
+```bash
+# List all buckets
+aws s3 ls
+
+# Check bucket sizes and last modified dates
+aws s3 ls --recursive s3://bucket-name --summarize
+
+# Check bucket policies and access logs
+aws s3api get-bucket-policy --bucket bucket-name
+aws s3api get-bucket-logging --bucket bucket-name
+```
+
+### 1.8 RDS Resources Audit
+```bash
+# List RDS instances
+aws rds describe-db-instances --query 'DBInstances[*].[DBInstanceIdentifier,DBInstanceStatus,Engine,DBInstanceClass,InstanceCreateTime]' --output table
+
+# List RDS snapshots
+aws rds describe-db-snapshots --query 'DBSnapshots[*].[DBSnapshotIdentifier,DBInstanceIdentifier,SnapshotCreateTime,Status]' --output table
+```
+
+### 1.9 Lambda Functions Audit
+```bash
+# List Lambda functions with last modified date
+aws lambda list-functions --query 'Functions[*].[FunctionName,Runtime,LastModified,CodeSize]' --output table
+```
+
+### 1.10 Security Groups and Key Pairs
+```bash
+# List security groups
+aws ec2 describe-security-groups --query 'SecurityGroups[*].[GroupId,GroupName,Description]' --output table
+
+# List key pairs
+aws ec2 describe-key-pairs --query 'KeyPairs[*].[KeyName,KeyFingerprint]' --output table
+```
+
+## Phase 2: Idle Resource Identification
+
+### 2.1 CloudWatch Metrics Analysis
+Use CloudWatch to identify truly idle resources:
+
+```bash
+# Check CPU utilization for EC2 instances (last 7 days)
+aws cloudwatch get-metric-statistics --namespace AWS/EC2 --metric-name CPUUtilization --dimensions Name=InstanceId,Value=i-1234567890abcdef0 --statistics Average --start-time $(date -d '7 days ago' -Iseconds) --end-time $(date -Iseconds) --period 86400
+```
+
+### 2.2 VPC Flow Logs Analysis
+Enable and analyze VPC Flow Logs to identify unused network resources.
+
+### 2.3 Access Logs Analysis
+- S3 access logs
+- ELB access logs
+- CloudTrail logs
+
+## Phase 3: Automated Audit Script
+
+### 3.1 Python Audit Script
+```python
+#!/usr/bin/env python3
+import boto3
+from datetime import datetime, timedelta
+import json
+
+class AWSResourceAuditor:
+    def __init__(self):
+        self.ec2 = boto3.client('ec2')
+        self.s3 = boto3.client('s3')
+        self.rds = boto3.client('rds')
+        self.elb = boto3.client('elb')
+        self.elbv2 = boto3.client('elbv2')
+        self.lambda_client = boto3.client('lambda')
+        self.cloudwatch = boto3.client('cloudwatch')
+    
+    def audit_ec2_instances(self):
+        """Audit EC2 instances for stopped instances older than 7 days"""
+        instances = self.ec2.describe_instances()
+        idle_instances = []
+        
+        cutoff_date = datetime.now() - timedelta(days=7)
+        
+        for reservation in instances['Reservations']:
+            for instance in reservation['Instances']:
+                if instance['State']['Name'] == 'stopped':
+                    launch_time = instance['LaunchTime'].replace(tzinfo=None)
+                    if launch_time < cutoff_date:
+                        idle_instances.append({
+                            'InstanceId': instance['InstanceId'],
+                            'LaunchTime': launch_time,
+                            'State': instance['State']['Name']
+                        })
+        
+        return idle_instances
+    
+    def audit_ebs_volumes(self):
+        """Audit unattached EBS volumes"""
+        volumes = self.ec2.describe_volumes(
+            Filters=[{'Name': 'status', 'Values': ['available']}]
+        )
+        
+        unattached_volumes = []
+        for volume in volumes['Volumes']:
+            unattached_volumes.append({
+                'VolumeId': volume['VolumeId'],
+                'Size': volume['Size'],
+                'VolumeType': volume['VolumeType'],
+                'CreateTime': volume['CreateTime']
+            })
+        
+        return unattached_volumes
+    
+    def audit_elastic_ips(self):
+        """Audit unassociated Elastic IPs"""
+        addresses = self.ec2.describe_addresses()
+        unassociated_eips = []
+        
+        for address in addresses['Addresses']:
+            if 'AssociationId' not in address:
+                unassociated_eips.append({
+                    'PublicIp': address['PublicIp'],
+                    'AllocationId': address['AllocationId']
+                })
+        
+        return unassociated_eips
+    
+    def generate_report(self):
+        """Generate comprehensive audit report"""
+        report = {
+            'audit_date': datetime.now().isoformat(),
+            'idle_ec2_instances': self.audit_ec2_instances(),
+            'unattached_ebs_volumes': self.audit_ebs_volumes(),
+            'unassociated_elastic_ips': self.audit_elastic_ips()
+        }
+        
+        return report
+
+if __name__ == "__main__":
+    auditor = AWSResourceAuditor()
+    report = auditor.generate_report()
+    
+    with open(f'aws_audit_report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json', 'w') as f:
+        json.dump(report, f, indent=2, default=str)
+    
+    print("Audit complete. Report saved.")
+```
+
+## Phase 4: Cost Analysis
+
+### 4.1 AWS Cost Explorer
+- Use Cost Explorer to identify high-cost resources
+- Set up cost anomaly detection
+- Create cost allocation tags
+
+### 4.2 AWS Trusted Advisor
+- Review Trusted Advisor recommendations for cost optimization
+- Check for idle resources and right-sizing opportunities
+
+## Phase 5: Safe Deletion Process
+
+### 5.1 Pre-Deletion Checklist
+- [ ] Create backups of critical data
+- [ ] Review dependencies between resources
+- [ ] Get approval from stakeholders
+- [ ] Schedule maintenance window if needed
+- [ ] Test deletion in non-production first
+
+### 5.2 Deletion Scripts
+```bash
+# Example: Safe EC2 instance termination
+aws ec2 create-snapshot --volume-id vol-1234567890abcdef0 --description "Backup before cleanup"
+aws ec2 terminate-instances --instance-ids i-1234567890abcdef0
+
+# Example: EBS volume deletion
+aws ec2 delete-volume --volume-id vol-1234567890abcdef0
+
+# Example: Elastic IP release
+aws ec2 release-address --allocation-id eipalloc-1234567890abcdef0
+```
+
+### 5.3 Rollback Plan
+- Document all deletion actions
+- Keep snapshots/backups for recovery
+- Have a rollback procedure ready
+
+## Phase 6: Monitoring and Prevention
+
+### 6.1 Set up CloudWatch Alarms
+- CPU utilization alerts
+- Network activity alerts
+- Storage usage alerts
+
+### 6.2 Implement Resource Tagging Strategy
+- Mandatory tags: Environment, Owner, Project, Purpose
+- Lifecycle tags: Creation date, Review date, Expiry date
+
+### 6.3 Automation
+- Use AWS Config rules for compliance
+- Set up Lambda functions for automatic cleanup
+- Implement Infrastructure as Code (CloudFormation/Terraform)
+
+## Cost Optimization Recommendations
+
+### Immediate Actions
+1. Release unassociated Elastic IPs
+2. Delete unattached EBS volumes (after verification)
+3. Terminate long-stopped EC2 instances
+4. Remove unused security groups and key pairs
+
+### Medium-term Actions
+1. Right-size EC2 instances based on utilization
+2. Convert GP2 to GP3 EBS volumes
+3. Implement S3 lifecycle policies
+4. Schedule EC2 instances for non-production workloads
+
+### Long-term Actions
+1. Implement Reserved Instances/Savings Plans
+2. Use Spot instances for fault-tolerant workloads
+3. Set up automated resource lifecycle management
+4. Regular quarterly audits
+
+## Security Considerations
+- Ensure deletion permissions are properly scoped
+- Log all deletion activities
+- Review IAM policies for resource creation
+- Implement approval workflows for resource deletion
+
+## Report Template
+```
+AWS Resource Audit Report
+========================
+Date: [Date]
+Account ID: [Account ID]
+Auditor: [Name]
+
+Executive Summary:
+- Total resources audited: [Number]
+- Idle resources identified: [Number]
+- Estimated monthly savings: $[Amount]
+
+Detailed Findings:
+[Resource Type] - [Count] - [Estimated Cost]
+
+Recommendations:
+1. [Action] - [Priority] - [Savings]
+2. [Action] - [Priority] - [Savings]
+
+Next Steps:
+1. Review and approve deletions
+2. Create backups where necessary
+3. Execute cleanup plan
+4. Implement monitoring
+```
+
+## Important Notes
+- Always test in non-production environments first
+- Consider dependencies between resources
+- Some resources may have termination protection enabled
+- Be aware of data retention requirements
+- Document all actions for audit purposes

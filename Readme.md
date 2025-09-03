@@ -35,7 +35,97 @@ aws ec2 describe-volumes --query 'Volumes[?Attachments[0].State==`attached`]' --
 <img width="1831" height="988" alt="image" src="https://github.com/user-attachments/assets/95386176-2d9a-46cc-a5b2-356e43f4ccda" />
 
 <img width="1776" height="907" alt="image" src="https://github.com/user-attachments/assets/83daac29-54df-484f-970e-c374b0f5ace1" />
+# EBS Volumes Analysis
 
+## Summary
+- **Total Volumes**: 50
+- **Unattached Volumes (None tag)**: 35
+- **Attached Volumes (Kubernetes PVCs)**: 15
+- **Total Storage (Unattached)**: 258 GB
+- **Estimated Monthly Cost (Unattached)**: ~$25.80 USD
+
+## Detailed Volume Inventory
+
+| Volume ID | Size (GB) | Type | Creation Date | Status | Age (Days) | Monthly Cost |
+|-----------|-----------|------|---------------|---------|------------|--------------|
+| vol-07cea0c1a466d0097 | 8 | gp2 | 2025-07-17T12:50:22 | Unattached | 48 | $0.80 |
+| vol-0805b513a4f183c7e | 8 | gp2 | 2025-07-24T04:27:05 | Attached (K8s) | 41 | - |
+| vol-0c0b759f668ca6290 | 8 | gp2 | 2025-07-24T04:27:43 | Attached (K8s) | 41 | - |
+| vol-04c53045ed32a4a89 | 8 | gp2 | 2025-07-26T00:51:24 | Unattached | 39 | $0.80 |
+| vol-093d89f0859eb4463 | 50 | gp2 | 2024-12-23T21:01:58 | Unattached | 254 | $5.00 |
+| vol-039d892cab63d2257 | 2 | gp2 | 2025-07-28T11:37:33 | Unattached | 37 | $0.20 |
+| vol-01fd793febba56e2b | 30 | gp2 | 2025-03-26T21:22:25 | Unattached | 161 | $3.00 |
+| vol-08ff211ccbead4b62 | 8 | gp2 | 2025-07-24T04:27:05 | Attached (K8s) | 41 | - |
+| vol-04f13d74b5f573521 | 2 | gp2 | 2025-07-24T04:27:05 | Attached (K8s) | 41 | - |
+| vol-0d45a3290f016342b | 8 | gp2 | 2025-07-17T12:46:14 | Unattached | 48 | $0.80 |
+| vol-008e5dbb35d667ec8 | 10 | gp2 | 2025-07-16T10:20:18 | Unattached | 49 | $1.00 |
+| vol-0de8cd08cb4257306 | 8 | gp2 | 2025-07-26T00:52:01 | Unattached | 39 | $0.80 |
+| vol-02801e2e1c9bfda49 | 8 | gp2 | 2025-06-03T07:23:22 | Unattached | 92 | $0.80 |
+| vol-0da8c3c626b5644ad | 1 | gp2 | 2025-07-24T04:27:15 | Attached (K8s) | 41 | - |
+| vol-022082ae3571c9eb4 | 2 | gp2 | 2025-07-17T12:49:18 | Unattached | 48 | $0.20 |
+| vol-044b3301252f5b75f | 8 | gp2 | 2025-07-24T04:28:16 | Attached (K8s) | 41 | - |
+| vol-0117a75dd80657a2c | 1 | gp2 | 2025-07-17T12:49:17 | Unattached | 48 | $0.10 |
+| vol-0ae83c391f6fdad0a | 2 | gp2 | 2025-07-26T00:56:01 | Unattached | 39 | $0.20 |
+| vol-0008caf7aea9d356d | 2 | gp2 | 2025-07-17T12:49:27 | Unattached | 48 | $0.20 |
+| vol-029ec7328a13f7c33 | 30 | gp3 | 2025-03-26T21:22:25 | Unattached | 161 | $2.40 |
+| vol-06739259fed902a86 | 2 | gp2 | 2025-07-24T04:27:27 | Attached (K8s) | 41 | - |
+| vol-089107da9ac877805 | 10 | gp2 | 2025-07-26T00:50:45 | Unattached | 39 | $1.00 |
+| vol-06f2986a734639e28 | 8 | gp2 | 2025-07-26T00:50:45 | Unattached | 39 | $0.80 |
+| vol-0488a103b3c017fb8 | 8 | gp2 | 2025-05-14T08:12:45 | Unattached | 112 | $0.80 |
+| vol-0a12d50ece925e6b9 | 8 | gp2 | 2025-05-14T08:13:24 | Unattached | 112 | $0.80 |
+| vol-0132956d13ad13934 | 8 | gp3 | 2025-06-09T16:30:51 | Unattached | 85 | $0.64 |
+| vol-0651754806cc9a18e | 2 | gp2 | 2025-07-24T04:27:15 | Attached (K8s) | 41 | - |
+| vol-0a2eac1c3c2e942d1 | 8 | gp2 | 2025-09-03T12:59:42 | Unattached | 0 | $0.80 |
+| vol-02630548dd28f5eed | 1 | gp2 | 2025-07-17T12:46:14 | Unattached | 48 | $0.10 |
+| vol-033cff8c6e8bfd92c | 1 | gp2 | 2025-07-17T12:49:27 | Unattached | 48 | $0.10 |
+| vol-0f1fd8c3a74f1f89e | 30 | gp3 | 2025-03-26T21:22:25 | Unattached | 161 | $2.40 |
+| vol-0d83f93c1d3490c73 | 8 | gp3 | 2025-06-03T07:22:49 | Unattached | 92 | $0.64 |
+| vol-003c5e8adc62b2198 | 8 | gp2 | 2025-06-09T16:29:46 | Unattached | 85 | $0.80 |
+| vol-0861f263e3762f66f | 1 | gp2 | 2025-07-26T00:56:01 | Unattached | 39 | $0.10 |
+| vol-03dba130b9ec9540a | 1 | gp2 | 2025-07-17T12:46:14 | Unattached | 48 | $0.10 |
+| vol-0fb7497e2bc273706 | 10 | gp2 | 2025-07-17T12:46:14 | Unattached | 48 | $1.00 |
+| vol-0b0c4f7bc2d7966af | 2 | gp2 | 2025-07-26T00:50:45 | Unattached | 39 | $0.20 |
+| vol-0beee7366b47395ae | 1 | gp2 | 2025-07-24T04:27:05 | Attached (K8s) | 41 | - |
+| vol-03974663b8427f914 | 2 | gp2 | 2025-07-24T04:27:05 | Attached (K8s) | 41 | - |
+| vol-05b8525cce2b398d4 | 8 | gp2 | 2025-07-26T00:50:45 | Unattached | 39 | $0.80 |
+| vol-040cb9ec4d4de93a0 | 1 | gp2 | 2025-07-24T04:27:27 | Attached (K8s) | 41 | - |
+| vol-0e0bfb8eb8ae862c9 | 1 | gp2 | 2025-07-28T11:36:42 | Unattached | 37 | $0.10 |
+| vol-09b0750b2b79a1d52 | 1 | gp2 | 2025-07-01T10:28:01 | Unattached | 64 | $0.10 |
+| vol-01758935e0844daa1 | 2 | gp2 | 2025-07-17T12:46:14 | Unattached | 48 | $0.20 |
+| vol-0bbec92ee8ba45bc7 | 1 | gp2 | 2025-07-17T12:46:14 | Unattached | 48 | $0.10 |
+| vol-04bf081f2f778b66a | 8 | gp3 | 2025-06-09T16:22:14 | Unattached | 85 | $0.64 |
+| vol-016d7ddf9196d6ca8 | 10 | gp2 | 2025-07-24T04:27:05 | Attached (K8s) | 41 | - |
+| vol-01b0aad8c20ad4f33 | 8 | gp2 | 2025-07-17T12:49:17 | Unattached | 48 | $0.80 |
+| vol-02e139fefad31041f | 8 | gp2 | 2025-07-17T12:49:50 | Unattached | 48 | $0.80 |
+| vol-060952b96698428d7 | 2 | gp2 | 2025-07-17T12:46:14 | Unattached | 48 | $0.20 |
+| vol-081a272e5c4979ca3 | 2 | gp2 | 2025-07-28T11:36:42 | Unattached | 37 | $0.20 |
+| vol-01dc1c9c63b8987d0 | 1 | gp2 | 2025-07-28T11:37:33 | Unattached | 37 | $0.10 |
+
+## Cleanup Recommendations
+
+### High Priority (Immediate Cleanup)
+1. **vol-093d89f0859eb4463** - 50GB, 254 days old, $5.00/month
+2. **vol-01fd793febba56e2b** - 30GB, 161 days old, $3.00/month
+3. **vol-029ec7328a13f7c33** - 30GB (gp3), 161 days old, $2.40/month
+4. **vol-0f1fd8c3a74f1f89e** - 30GB (gp3), 161 days old, $2.40/month
+
+### Medium Priority (30+ days old)
+- Multiple 8GB volumes created in May-July 2025
+- Total potential savings: ~$8-12/month
+
+### Low Priority (Recent volumes)
+- vol-0a2eac1c3c2e942d1 (created today)
+- Multiple volumes from July 28, 2025
+
+## Action Items
+1. **Verify dependencies** for high-priority volumes before deletion
+2. **Create snapshots** for any volumes containing important data
+3. **Delete unattached volumes** older than 30 days after verification
+4. **Consider converting** remaining GP2 volumes to GP3 for cost savings
+
+## Cost Impact
+- **Current monthly waste**: ~$25.80 USD
+- **Annual savings potential**: ~$309.60 USD
 ### 1.3 Snapshots Audit
 ```bash
 # List snapshots older than 30 days (adjust date as needed)

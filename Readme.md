@@ -278,6 +278,8 @@ aws rds describe-db-instances --query 'DBInstances[*].[DBInstanceIdentifier,DBIn
 # List RDS snapshots
 aws rds describe-db-snapshots --query 'DBSnapshots[*].[DBSnapshotIdentifier,DBInstanceIdentifier,SnapshotCreateTime,Status]' --output table
 ```
+<img width="1858" height="328" alt="image" src="https://github.com/user-attachments/assets/02c9ff75-d351-49cb-9288-6273fea5569d" />
+
 
 ### 1.9 Lambda Functions Audit
 ```bash
@@ -293,6 +295,85 @@ aws ec2 describe-security-groups --query 'SecurityGroups[*].[GroupId,GroupName,D
 # List key pairs
 aws ec2 describe-key-pairs --query 'KeyPairs[*].[KeyName,KeyFingerprint]' --output table
 ```
+
+# Unused Security Groups Analysis
+
+## Summary
+- **Total Security Groups**: 30
+- **Used Security Groups**: 10
+- **Unused Security Groups**: 20 (67%)
+- **Cleanup Potential**: High - Most are from deleted/unused resources
+
+## Security Groups Currently in Use
+
+| Security Group ID | Status | Usage Count |
+|-------------------|---------|-------------|
+| sg-0ddb8ebf447221b40 | ✅ Active | 2 instances |
+| sg-0daf44ec107926cbe | ✅ Active | 12 instances |
+| sg-09a52667b1cbf2e63 | ✅ Active | 12 instances |
+| sg-09a9f3d731763ed3b | ✅ Active | 2 instances |
+| sg-026968a82cad06ee9 | ✅ Active | 1 instance |
+| sg-0e1f49d1de914b2d5 | ✅ Active | 1 instance |
+| sg-0412cc1e8102c7777 | ✅ Active | 1 instance |
+
+## Unused Security Groups (Candidates for Deletion)
+
+| Security Group ID | Security Group Name | Resource Type | Priority | Action Recommended |
+|-------------------|-------------------|---------------|----------|-------------------|
+| sg-066608322f396e604 | k8s-nginxproxy-79de5459d7 | Kubernetes | High | Delete - Nginx proxy no longer used |
+| sg-0d42241e584446725 | k8s-elb-a33b74d4e528443d2a6b2fb94b36cd98 | Kubernetes ELB | High | Delete - Load balancer removed |
+| sg-0f4a440f8b67c602c | eks-cluster-sg-on-prem-test-1-2071749685 | EKS Cluster | Medium | Verify cluster deletion |
+| sg-0553c998fdbfe5626 | k8s-elb-ab1b2b914e0d948ff82a51cb25ae840a | Kubernetes ELB | High | Delete - Load balancer removed |
+| sg-05c931404736c4f18 | launch-wizard-2 | EC2 Launch | High | Delete - Launch wizard temporary SG |
+| sg-08ae6ae583eb77ae8 | rds-sg | RDS Database | Medium | Verify RDS deletion |
+| sg-0197223e307d678d2 | vpc-link | API Gateway | Medium | Verify VPC Link usage |
+| sg-065297bbc7c51a155 | k8s-app-3b8f8b4357 | Kubernetes App | High | Delete - App no longer deployed |
+| sg-09649a03925455334 | k8s-traffic-onpremtest1-dcbd699e6d | Kubernetes Traffic | High | Delete - Test environment removed |
+| sg-0cf2c04c0bb46f21f | launch-wizard-1 | EC2 Launch | High | Delete - Launch wizard temporary SG |
+| sg-00724425f556a5690 | k8s-traffic-opshealthdeveks-c38f872e14 | Kubernetes Traffic | Medium | Verify dev environment |
+| sg-01536e3df2189d6e3 | opshealth-dev-eks-cluster-20240718212255669600000007 | EKS Cluster | Medium | Verify dev cluster deletion |
+| sg-064916ccb5d34820e | k8s-ingressn-ingressn-efa5234660 | Kubernetes Ingress | High | Delete - Ingress controller removed |
+| sg-0a30b68a1ee9b3663 | k8s-rafay-rafaying-0e4b5f3450 | Rafay Platform | Medium | Verify Rafay deployment |
+| sg-0d5cd6d1cd515553b | DatadogIntegration-DatadogAgentlessScanning-... | Datadog Integration | Low | Check Datadog integration status |
+| sg-01c5249deb65763b5 | launch-wizard-3 | EC2 Launch | High | Delete - Launch wizard temporary SG |
+| sg-0d364d9186d964e40 | k8s-elb-ac094a376a4e549a789df36eae8367f2 | Kubernetes ELB | High | Delete - Load balancer removed |
+| sg-05befc0c017e08aac | launch-wizard-5 | EC2 Launch | High | Delete - Launch wizard temporary SG |
+| sg-01869286f085a9e93 | JenkinsSecGroup | Jenkins | Medium | Verify Jenkins usage |
+| sg-02c469419dde8f2b1 | DatadogIntegration-DatadogAgentlessScanning-... | Datadog Scanning | Low | Check Datadog scanning status |
+
+## Cleanup Categories
+
+### 🔴 High Priority - Safe to Delete (13 Security Groups)
+**Launch Wizard Temporary Groups**
+- sg-05c931404736c4f18 (launch-wizard-2)
+- sg-0cf2c04c0bb46f21f (launch-wizard-1)
+- sg-01c5249deb65763b5 (launch-wizard-3)
+- sg-05befc0c017e08aac (launch-wizard-5)
+
+**Kubernetes Resources - Deleted/Unused**
+- sg-066608322f396e604 (k8s-nginxproxy-79de5459d7)
+- sg-0d42241e584446725 (k8s-elb-a33b74d4e528...)
+- sg-0553c998fdbfe5626 (k8s-elb-ab1b2b914e0d...)
+- sg-065297bbc7c51a155 (k8s-app-3b8f8b4357)
+- sg-09649a03925455334 (k8s-traffic-onpremtest1...)
+- sg-064916ccb5d34820e (k8s-ingressn-ingressn...)
+- sg-0d364d9186d964e40 (k8s-elb-ac094a376a4e...)
+
+### 🟡 Medium Priority - Verify Before Delete (6 Security Groups)
+**Infrastructure Components**
+- sg-0f4a440f8b67c602c (eks-cluster-sg-on-prem-test-1...)
+- sg-08ae6ae583eb77ae8 (rds-sg)
+- sg-0197223e307d678d2 (vpc-link)
+- sg-00724425f556a5690 (k8s-traffic-opshealthdeveks...)
+- sg-01536e3df2189d6e3 (opshealth-dev-eks-cluster...)
+- sg-0a30b68a1ee9b3663 (k8s-rafay-rafaying...)
+- sg-01869286f085a9e93 (JenkinsSecGroup)
+
+### 🟢 Low Priority - Keep for Now (2 Security Groups)
+**Third-party Integrations**
+- sg-0d5cd6d1cd515553b (DatadogIntegration-DatadogAgentlessScanning...)
+- sg-02c469419dde8f2b1 (DatadogIntegration-DatadogAgentlessScanning...)
+
 
 ## Phase 2: Idle Resource Identification
 

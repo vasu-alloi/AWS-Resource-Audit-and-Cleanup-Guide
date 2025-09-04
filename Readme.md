@@ -147,11 +147,16 @@ aws ec2 describe-images --owners self --query 'Images[*].[ImageId,Name,CreationD
 aws ec2 describe-launch-templates --query 'LaunchTemplates[*].[LaunchTemplateId,LaunchTemplateName]' --output table
 ```
 
+<img width="1715" height="451" alt="image" src="https://github.com/user-attachments/assets/7d8a0843-0c16-473a-9308-2d5b84b7ef1d" />
+
+
 ### 1.5 Elastic IP Audit
 ```bash
 # List unassociated Elastic IPs
 aws ec2 describe-addresses --query 'Addresses[?AssociationId==null].[PublicIp,AllocationId,Domain]' --output table
 ```
+<img width="1834" height="249" alt="image" src="https://github.com/user-attachments/assets/83a47c3f-153c-475b-b496-30c47907bea4" />
+
 
 ### 1.6 Load Balancers Audit
 ```bash
@@ -164,6 +169,14 @@ aws elbv2 describe-load-balancers --query 'LoadBalancers[*].[LoadBalancerName,St
 # Check target health
 aws elbv2 describe-target-groups --query 'TargetGroups[*].[TargetGroupName,TargetType]' --output table
 ```
+### ClassicLoadBalancer:
+<img width="1827" height="182" alt="image" src="https://github.com/user-attachments/assets/fd701bfe-9892-4db9-85fe-a16865750be5" />
+### Application&NetworkLoadBalancer:
+
+<img width="1853" height="217" alt="image" src="https://github.com/user-attachments/assets/f09b1b07-4e1a-476d-85f0-73816d7e2869" />
+### TargetGroups:
+<img width="1813" height="985" alt="image" src="https://github.com/user-attachments/assets/44a88de9-d493-455b-ad59-ab021b5a15b5" />
+
 
 ### 1.7 S3 Buckets Audit
 ```bash

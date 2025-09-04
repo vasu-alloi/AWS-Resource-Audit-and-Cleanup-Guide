@@ -190,6 +190,85 @@ aws s3 ls --recursive s3://bucket-name --summarize
 aws s3api get-bucket-policy --bucket bucket-name
 aws s3api get-bucket-logging --bucket bucket-name
 ```
+### ListOfBuckets:
+<img width="1376" height="464" alt="image" src="https://github.com/user-attachments/assets/47c7acc0-ce5d-4bf8-9d92-bb413e2c6382" />
+### ListEmptyBuckets
+<img width="1103" height="268" alt="image" src="https://github.com/user-attachments/assets/8a707948-2fea-4125-846a-d59d492af34c" />
+# S3 Bucket Analysis Report
+
+## Summary
+- **Total Buckets**: 16
+- **Empty Buckets**: 4 (25%)
+- **Buckets with Objects**: 12 (75%)
+- **Total Objects Across All Buckets**: ~3,378 objects
+- **CloudWatch Metrics**: Not enabled for any bucket
+
+## Detailed Bucket Inventory
+
+| Bucket Name | Status | Object Count | CloudWatch Metrics | Cleanup Priority | Action Recommended |
+|-------------|---------|--------------|-------------------|------------------|-------------------|
+| demo.opshealth.io | Active | 106 | Not Available | Low | Review content, enable metrics |
+| dev.opshealth.io | Active | 106 | Not Available | Low | Review content, enable metrics |
+| **devops.opshealth.io** | **Empty** | **0** | **Not Available** | **High** | **Delete if unused** |
+| jenkins-test.opshealth.io | Active | 100 | Not Available | Medium | Verify if test env is active |
+| onprem-rafay | Active | 101 | Not Available | Low | Review content, enable metrics |
+| opshealth-demo | Active | 113 | Not Available | Low | Review content, enable metrics |
+| opshealth-dev | Active | 209 | Not Available | Low | Review content, enable metrics |
+| opshealth-local-test | Active | 3 | Not Available | Medium | Verify if test env is active |
+| opshealth-quickwit-dev | Active | 1 | Not Available | Medium | Verify if dev env is active |
+| opshealth-test | Active | 102 | Not Available | Medium | Verify if test env is active |
+| **qa.opshealth.io** | **Empty** | **0** | **Not Available** | **High** | **Delete if unused** |
+| **sandbox.opshealth.io** | **Empty** | **0** | **Not Available** | **High** | **Delete if unused** |
+| service-catalog-logos | Active | 3 | Not Available | Low | Likely in use for UI |
+| **stage.opshealth.io** | **Empty** | **0** | **Not Available** | **High** | **Delete if unused** |
+| test-timescaledb-1 | Active | 2,040 | Not Available | Low | Database backups - keep |
+| test.opshealth.io | Active | 100 | Not Available | Medium | Verify if test env is active |
+
+## Cost Analysis
+
+### Empty Buckets (Immediate Savings)
+| Bucket Name | Monthly Cost | Annual Cost | Status |
+|-------------|--------------|-------------|---------|
+| devops.opshealth.io | $0.00* | $0.00* | Ready for deletion |
+| qa.opshealth.io | $0.00* | $0.00* | Ready for deletion |
+| sandbox.opshealth.io | $0.00* | $0.00* | Ready for deletion |
+| stage.opshealth.io | $0.00* | $0.00* | Ready for deletion |
+
+*Empty buckets have no storage costs but may have minimal request/management costs
+
+### Environment-Based Analysis
+| Environment | Bucket Count | Total Objects | Status |
+|-------------|--------------|---------------|---------|
+| Production | 1 | 106 | Active (demo.opshealth.io) |
+| Development | 4 | 319 | Mixed usage |
+| Testing | 5 | 2,245 | Mixed usage |
+| Staging | 1 | 0 | **Empty - Delete candidate** |
+| QA | 1 | 0 | **Empty - Delete candidate** |
+| Sandbox | 1 | 0 | **Empty - Delete candidate** |
+| Other | 4 | 708 | Active |
+
+## Cleanup Recommendations
+
+### 🔴 High Priority - Immediate Action
+1. **Empty Environment Buckets** (4 buckets)
+   - `devops.opshealth.io` - Empty DevOps bucket
+   - `qa.opshealth.io` - Empty QA environment
+   - `sandbox.opshealth.io` - Empty sandbox environment  
+   - `stage.opshealth.io` - Empty staging environment
+
+### 🟡 Medium Priority - Review Required
+2. **Test Environment Buckets** (4 buckets)
+   - `jenkins-test.opshealth.io` - Verify Jenkins usage
+   - `opshealth-local-test` - Check local development needs
+   - `opshealth-quickwit-dev` - Verify Quickwit development
+   - `test.opshealth.io` - General test environment
+
+### 🟢 Low Priority - Monitor
+3. **Active Production/Development** (8 buckets)
+   - All contain significant objects
+   - Enable CloudWatch metrics for monitoring
+   - Review lifecycle policies
+
 
 ### 1.8 RDS Resources Audit
 ```bash

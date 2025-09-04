@@ -131,6 +131,12 @@ aws ec2 describe-volumes --query 'Volumes[?Attachments[0].State==`attached`]' --
 # List snapshots older than 30 days (adjust date as needed)
 aws ec2 describe-snapshots --owner-ids self --query 'Snapshots[?StartTime<=`'$(date -d '30 days ago' -Iseconds)'`].[SnapshotId,VolumeId,StartTime,Description]' --output table
 ```
+<img width="1832" height="240" alt="image" src="https://github.com/user-attachments/assets/1f2604a7-1e41-4234-a165-0e4b20edf589" />
+
+### No volumes attached to this snapshots:
+
+<img width="1610" height="280" alt="image" src="https://github.com/user-attachments/assets/a5f9fdc3-3564-46a7-aaa6-1c254e8acdd9" />
+
 
 ### 1.4 AMI Audit
 ```bash
